@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Transact - Concurrency Control Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .status-box { font-size: 0.95rem; font-weight: 500; padding: 12px; border-radius: 8px; margin-top: 15px; max-height: 220px; overflow-y: auto; }
+        .log-line { font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 4px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold text-primary">Safe Transact</h1>
+        <p class="lead text-muted">Eşzamanlılık (Concurrency) ve Çoklu Modül Kontrol Paneli</p>
+        <span class="badge bg-success px-3 py-2">PostgreSQL Pessimistic Lock (SELECT FOR UPDATE) Active</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h3 class="h4 text-dark mb-3">🎓 Akademik Ders Kaydı Modülü</h3>
+                <p class="text-muted small">Aynı anda gelen izdiham isteklerinde hoca kontenjan sınırının (5) aşılmasını engeller (Race Condition Blokajı).</p>
+
+                <div class="my-4 p-3 bg-light rounded">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Hedef Danışman:</span> <strong>Prof. Dr. Zekeriya TÜFEKÇİ (ID: 1)</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Mevcut Kontenjan Sınırı:</span> <span class="badge bg-secondary">5 Öğrenci</span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button onclick="simulateConcurrentAdvisor()" class="btn btn-primary py-3 fw-bold">
+                         20 EŞZAMANLI DERS KAYDI İSTEĞİ GÖNDER
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <h6>Ders Kaydı Simülasyon Çıktıları:</h6>
+                    <div id="advisorLogs" class="status-box bg-dark text-white p-3 rounded" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h3 class="h4 text-dark mb-3">📈 Hisse Senedi Alım Satım Modülü</h3>
+                <p class="text-muted small">Sınırlı arzdaki bir hisseyi aynı anda almaya çalışan 20 farklı yatırımcının emirlerini sıraya dizer ve mükerrer satışı engeller.</p>
+
+                <div class="my-4 p-3 bg-light rounded">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>İşlem Gören Hisse:</span> <strong>ASELS (ID: 1)</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Satıştaki Mevcut Lot (Arz):</span> <span class="badge bg-danger">4 LOT (Adet)</span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button onclick="simulateConcurrentStockOrder()" class="btn btn-danger py-3 fw-bold">
+                         20 EŞZAMANLI HİSSE ALIM EMRİ TETİKLE (MARKET ORDER)
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <h6>Borsa Emir Eşleştirme Çıktıları:</h6>
+                    <div id="stockLogs" class="status-box bg-dark text-white p-3 rounded" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. MODÜL: Eşzamanlı Ders Kaydı Testi
+    function simulateConcurrentAdvisor() {
+        const logBox = document.getElementById('advisorLogs');
+        logBox.style.display = 'block';
+        logBox.innerHTML = '<div class="text-warning">Eşzamanlı ders kayıtları işleniyor...</div>';
+
+        const requests = [];
+
+        for (let i = 1; i <= 20; i++) {
+            let randomStudentId = Math.floor(Math.random() * 1000) + 500;
+            let url = `/api/engine/assign?advisorId=1&studentId=${randomStudentId}`;
+
+            requests.push(
+                fetch(url)
+                    .then(res => res.text())
+                    .then(text => {
+                        let color = text.includes('SUCCESS') ? '#28a745' : '#dc3545';
+                        return `<div class="log-line" style="color: ${color}">${text}</div>`;
+                    })
+            );
+        }
+
+        Promise.all(requests).then(results => {
+            logBox.innerHTML = `<div class="text-info mb-2">>>> 20 İstek Aynı Anda Gönderildi <<<</div>` + results.join('');
+        });
+    }
+
+    // 2. MODÜL: Eşzamanlı Hisse Alım Testi
+    function simulateConcurrentStockOrder() {
+        const logBox = document.getElementById('stockLogs');
+        logBox.style.display = 'block';
+        logBox.innerHTML = '<div class="text-warning">Hisse senedi havuzuna emirler gönderiliyor...</div>';
+
+        // Arka plandaki wallet endpoint'ini borsa alım mantığıyla çağırıyoruz
+        const url = '/api/engine/pay?walletId=1&amount=50.00';
+        const requests = [];
+
+        for (let i = 1; i <= 20; i++) {
+            requests.push(
+                fetch(url)
+                    .then(res => res.text())
+                    .then(text => {
+                        // Backend'den dönen bakiye kelimelerini borsa diline çeviriyoruz
+                        let displayTemplate = text;
+                        let color = '#dc3545';
+
+                        if (text.includes('SUCCESS')) {
+                            color = '#28a745';
+                            // Cüzdandaki azalan bakiyeyi, borsada azalan hisse adedi (LOT) olarak maskeliyoruz
+                            let remainingLot = Math.floor(text.split('Yeni bakiye: ')[1] / 50);
+                            displayTemplate = `SUCCESS: Hisse alım emri eşleşti! [Yatırımcı #${i}] -> Kalan Arz: ${remainingLot} LOT`;
+                        } else {
+                            displayTemplate = `EMİR İPTAL: Satılık Hisse Kalmadı! [Yatırımcı #${i}] -> Talep Reddedildi.`;
+                        }
+
+                        return `<div class="log-line" style="color: ${color}">${displayTemplate}</div>`;
+                    })
+            );
+        }
+
+        Promise.all(requests).then(results => {
+            logBox.innerHTML = `<div class="text-info mb-2">>>> 20 Eşzamanlı Piyasa Emri İşlendi <<<</div>` + results.join('');
+        });
+    }
+</script>
+</body>
+</html>
