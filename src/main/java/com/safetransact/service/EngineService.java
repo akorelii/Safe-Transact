@@ -17,11 +17,10 @@ public class EngineService {
         this.walletRepository = walletRepository;
     }
 
-    // 1. MODÜL: Akademik Kontenjan Atama (Guvenceli)
+    
     @Transactional
     public String assignAdvisorSecurely(Long advisorId, Long studentId) {
-        // Satiri kilitliyoruz
-        Advisor advisor = advisorRepository.findByIdWithPessimisticLock(advisorId)
+               Advisor advisor = advisorRepository.findByIdWithPessimisticLock(advisorId)
                 .orElseThrow(() -> new RuntimeException("Danisman bulunamadi!"));
 
         if (advisor.getCurrentUsed() >= advisor.getQuotaLimit()) {
@@ -46,7 +45,6 @@ public class EngineService {
             return "YETERSIZ BAKIYE! Islem iptal edildi.";
         }
 
-        // Bakiyeden dusuyoruz
         wallet.setBalance(wallet.getBalance().subtract(amount));
         walletRepository.save(wallet);
 
