@@ -14,7 +14,7 @@ The system leverages a **Pessimistic Locking** architecture across two separate 
 
 ## 🎯 Core Technical Problems Resolved
 
-1. **Race Conditions:** Occurs when hundreds of concurrent worker threads attempt to read and write to a shared resource (e.g., academic quotas or stock balances) at the exact same millisecond, leading to corrupted data states or over-allocation via Dirty Reads.
+1. **Race Conditions:**  Occurs when hundreds of concurrent worker threads attempt to read and write to a shared resource (e.g., academic quotas or stock balances) at the exact same millisecond, leading to corrupted data states or over-allocation via Dirty Reads.
 2. **Double Spending:** Financial vulnerability where lack of thread serialization permits accounts to spend past their predefined balances during simultaneous payment dispatches.
 
 ---
